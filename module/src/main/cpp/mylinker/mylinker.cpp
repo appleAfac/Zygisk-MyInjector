@@ -37,7 +37,7 @@ bool mylinker_load_library(const char* library_path, JavaVM* vm) {
           LOGI("can't found JNI_ONLoad");
         }
     }else{
-      LOGI("get jni env fail");
+      LOGI("GetEnv fail!");
     }
 
     loaded_libraries[path] = std::move(loader);
