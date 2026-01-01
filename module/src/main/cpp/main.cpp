@@ -50,7 +50,7 @@ public:
                 LOGI("Main thread blocking for %d seconds before injection", delay);
                 
                 // Block main thread for the delay period
-                sleep(delay);
+                // sleep(delay);
                 
                 // Then start hack thread with JavaVM
                 std::thread hack_thread(hack_prepare, _data_dir, _package_name, data, length, vm);
