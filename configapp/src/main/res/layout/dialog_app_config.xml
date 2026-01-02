@@ -168,11 +168,26 @@
         android:orientation="vertical">
 
         <RadioButton
+            android:id="@+id/radioJavaInjection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="java方式注入"
+            android:checked="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginBottom="8dp"
+            android:text="使用System.load方式注入"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="12sp" />
+
+        <RadioButton
             android:id="@+id/radioStandardInjection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="标准注入"
-            android:checked="true" />
+            android:text="标准注入" />
 
         <TextView
             android:layout_width="wrap_content"

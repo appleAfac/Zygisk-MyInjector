@@ -16,9 +16,17 @@ namespace Config {
     enum class InjectionMethod {
         STANDARD = 0,
         RIRU = 1,
-        CUSTOM_LINKER = 2
+        CUSTOM_LINKER = 2,
+        JAVA = 3,
     };
-    
+
+    static inline std::unordered_map<InjectionMethod, std::string_view> injectMethodMap = {
+        {InjectionMethod::STANDARD, "STANDARD"},
+        {InjectionMethod::RIRU, "RIRU"},
+        {InjectionMethod::CUSTOM_LINKER, "CUSTOM_LINKER"},
+        {InjectionMethod::JAVA, "JAVA"},
+    };
+
     struct GadgetConfig {
         std::string address = "0.0.0.0";
         int port = 27042;

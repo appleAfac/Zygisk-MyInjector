@@ -10,15 +10,96 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <jni.h>
+#include <xdl.h>
 
 // External function from newriruhide.cpp
 extern "C" void riru_hide(const char *name);
 
-void load_so_file_standard(const char *game_data_dir, const Config::SoFile &soFile) {
+
+
+void load_so_file_java(const char *game_data_dir, const Config::SoFile &soFile, JavaVM *vm) {
+  bool load = false;
+  // Use original filename
+  char so_path[512];
+  snprintf(so_path, sizeof(so_path), "%s/files/%s", game_data_dir, soFile.name.c_str());
+
+  // Check if file exists
+  if (access(so_path, F_OK) != 0) {
+    LOGE("SO file not found: %s", so_path);
+    return;
+  }
+
+
+  JNIEnv *env = nullptr;
+  bool needDetach = false;
+  jint getEnvStat = vm->GetEnv((void **)&env, JNI_VERSION_1_6);
+  if (getEnvStat == JNI_EDETACHED) {
+    LOGI("Thread not attached, attaching...");
+    if (vm->AttachCurrentThread(&env, NULL) != 0) {
+      LOGE("Failed to attach current thread");
+      return;
+    }
+    needDetach = true;
+  } else if (getEnvStat == JNI_OK) {
+    LOGI("Thread already attached");
+  } else if (getEnvStat == JNI_EVERSION) {
+    LOGE("JNI version not supported");
+    return;
+  } else {
+    LOGE("Failed to get the environment using GetEnv, error code: %d", getEnvStat);
+    return;
+  }
+  if (env != nullptr) {
+    jclass systemClass = env->FindClass("java/lang/System");
+    if (systemClass == nullptr) {
+      LOGE("Failed to find java/lang/System class");
+    } else {
+      jmethodID loadMethod = env->GetStaticMethodID(systemClass, "load", "(Ljava/lang/String;)V");
+      if (loadMethod == nullptr) {
+        LOGE("Failed to find System.load method");
+      } else {
+        jstring jLibPath = env->NewStringUTF(so_path);
+        env->CallStaticVoidMethod(systemClass, loadMethod, jLibPath);
+        if (env->ExceptionCheck()) {
+          env->ExceptionDescribe();
+          LOGE("Exception occurred while calling System.load %s",so_path);
+          env->ExceptionClear();
+        } else {
+          LOGI("Successfully loaded %s using System.load", so_path);
+          load = true;
+        }
+        env->DeleteLocalRef(jLibPath);
+      }
+      env->DeleteLocalRef(systemClass);
+    }
+  }
+  if (!load) {
+    LOGI("Failed to load test.so in thread %d", gettid());
+    return;
+  }
+
+
+//  JNIEnv* env = nullptr;
+//  if (vm && vm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_OK) {
+//    typedef jint (*JNI_OnLoad_t)(JavaVM*, void*);
+//    auto jni_onload = reinterpret_cast<JNI_OnLoad_t>(xdl_dsym(handle, "JNI_OnLoad", nullptr));
+//    if (jni_onload) {
+//      LOGI("Calling JNI_OnLoad");
+//      jni_onload(vm, nullptr);
+//    }else{
+//      LOGI("can't found JNI_ONLoad");
+//    }
+//  }else{
+//    LOGI("GetEnv fail!");
+//  }
+}
+
+
+void load_so_file_standard(const char *game_data_dir, const Config::SoFile &soFile, JavaVM *vm) {
     // Use original filename
     char so_path[512];
     snprintf(so_path, sizeof(so_path), "%s/files/%s", game_data_dir, soFile.name.c_str());
-    
+
     // Check if file exists
     if (access(so_path, F_OK) != 0) {
         LOGE("SO file not found: %s", so_path);
@@ -26,12 +107,26 @@ void load_so_file_standard(const char *game_data_dir, const Config::SoFile &soFi
     }
     
     // Load the SO file using standard dlopen (no hiding)
-    void *handle = dlopen(so_path, RTLD_NOW | RTLD_LOCAL);
+    void *handle = xdl_open(so_path, RTLD_NOW | RTLD_LOCAL);
     if (handle) {
         LOGI("Successfully loaded SO via standard dlopen: %s", soFile.name.c_str());
     } else {
         LOGE("Failed to load SO via standard dlopen: %s - %s", so_path, dlerror());
     }
+
+//  JNIEnv* env = nullptr;
+//  if (vm && vm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_OK) {
+//    typedef jint (*JNI_OnLoad_t)(JavaVM*, void*);
+//    auto jni_onload = reinterpret_cast<JNI_OnLoad_t>(xdl_dsym(handle, "JNI_OnLoad", nullptr));
+//    if (jni_onload) {
+//      LOGI("Calling JNI_OnLoad");
+//      jni_onload(vm, nullptr);
+//    }else{
+//      LOGI("can't found JNI_ONLoad");
+//    }
+//  }else{
+//    LOGI("GetEnv fail!");
+//  }
 }
 
 void load_so_file_riru(const char *game_data_dir, const Config::SoFile &soFile) {
@@ -93,8 +188,8 @@ void hack_thread_func(const char *game_data_dir, const char *package_name, JavaV
     
     // Get injection method for this app
     Config::InjectionMethod method = Config::getAppInjectionMethod(package_name);
-    const char* methodName = method == Config::InjectionMethod::CUSTOM_LINKER ? "Custom Linker" :
-                             method == Config::InjectionMethod::RIRU ? "Riru" : "Standard";
+    const char* methodName = Config::injectMethodMap[method].data();
+
     LOGI("Using injection method: %s", methodName);
     
     // Get SO files for this app
@@ -115,8 +210,12 @@ void hack_thread_func(const char *game_data_dir, const char *package_name, JavaV
             load_so_file_custom_linker(game_data_dir, soFile, vm);
         } else if (method == Config::InjectionMethod::RIRU) {
             load_so_file_riru(game_data_dir, soFile);
-        } else {
-            load_so_file_standard(game_data_dir, soFile);
+        } else if(method == Config::InjectionMethod::JAVA){
+          load_so_file_java(game_data_dir, soFile, vm);
+        }
+        else {
+            load_so_file_standard(game_data_dir, soFile, vm);
+
         }
     }
     
@@ -128,8 +227,7 @@ void hack_thread_func(const char *game_data_dir, const char *package_name, JavaV
 }
 
 void hack_prepare(const char *game_data_dir, const char *package_name, void *data, size_t length, JavaVM *vm) {
-    LOGI("hack_prepare called for package: %s, dir: %s", package_name, game_data_dir);
+    LOGI("hack_prepare11 called for package: %s, dir: %s", package_name, game_data_dir);
     
-    std::thread hack_thread(hack_thread_func, game_data_dir, package_name, vm);
-    hack_thread.join();
+    hack_thread_func(game_data_dir, package_name, vm);
 }

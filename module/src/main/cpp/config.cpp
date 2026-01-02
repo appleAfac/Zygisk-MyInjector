@@ -56,7 +56,10 @@ namespace Config {
             appConfig.injectionMethod = InjectionMethod::CUSTOM_LINKER;
         } else if (methodStr == "1" || methodStr == "riru") {
             appConfig.injectionMethod = InjectionMethod::RIRU;
-        } else {
+        } else if(methodStr == "3" || methodStr == "java"){
+          appConfig.injectionMethod = InjectionMethod::JAVA;
+        }
+        else {
             appConfig.injectionMethod = InjectionMethod::STANDARD;
         }
         

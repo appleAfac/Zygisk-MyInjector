@@ -686,7 +686,7 @@ public class ConfigManager {
     public static class AppConfig {
         public boolean enabled = false;
         public List<SoFile> soFiles = new ArrayList<>();
-        public String injectionMethod = "standard"; // "standard", "riru" or "custom_linker"
+        public String injectionMethod = "standard"; // "standard", "riru" or "custom_linker", "java"
         public GadgetConfig gadgetConfig = null;
         public boolean useGlobalGadget = true; // Whether to use global gadget settings
     }

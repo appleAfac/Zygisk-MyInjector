@@ -138,6 +138,7 @@ public class AppListFragment extends Fragment implements AppListAdapter.OnAppTog
         TextView emptyText = dialogView.findViewById(R.id.emptyText);
         RadioGroup injectionMethodGroup = dialogView.findViewById(R.id.injectionMethodGroup);
         RadioButton radioStandardInjection = dialogView.findViewById(R.id.radioStandardInjection);
+        RadioButton radioJavaInjection = dialogView.findViewById(R.id.radioJavaInjection);
         RadioButton radioRiruInjection = dialogView.findViewById(R.id.radioRiruInjection);
         RadioButton radioCustomLinkerInjection = dialogView.findViewById(R.id.radioCustomLinkerInjection);
         RadioGroup gadgetConfigGroup = dialogView.findViewById(R.id.gadgetConfigGroup);
@@ -157,6 +158,8 @@ public class AppListFragment extends Fragment implements AppListAdapter.OnAppTog
             radioCustomLinkerInjection.setChecked(true);
         } else if ("riru".equals(injectionMethod)) {
             radioRiruInjection.setChecked(true);
+        } else if ("java".equals(injectionMethod)) {
+            radioJavaInjection.setChecked(true);
         } else {
             radioStandardInjection.setChecked(true);
         }
@@ -256,6 +259,8 @@ public class AppListFragment extends Fragment implements AppListAdapter.OnAppTog
                         selectedMethod = "custom_linker";
                     } else if (radioRiruInjection.isChecked()) {
                         selectedMethod = "riru";
+                    } else if (radioJavaInjection.isChecked()) {
+                        selectedMethod = "java";
                     } else {
                         selectedMethod = "standard";
                     }
