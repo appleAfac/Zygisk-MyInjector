@@ -41,7 +41,7 @@ bool mylinker_load_library(const char* library_path, JavaVM* vm) {
     }
 
     loaded_libraries[path] = std::move(loader);
-    LOGI("Successfully loaded library: %s", library_path);
+    LOGI("Successfully 111 loaded library: %s", library_path);
     return true;
 }
 
